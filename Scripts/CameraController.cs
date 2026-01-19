@@ -9,7 +9,18 @@ public class CameraController : MonoBehaviour
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
-        Vector3 move = new Vector3(horizontal, 0f, vertical);
+        // Берём направления камеры
+        Vector3 forward = transform.forward;
+        Vector3 right = transform.right;
+
+        // Убираем наклон по Y
+        forward.y = 0f;
+        right.y = 0f;
+
+        forward.Normalize();
+        right.Normalize();
+
+        Vector3 move = forward * vertical + right * horizontal;
         transform.position += move * moveSpeed * Time.deltaTime;
     }
 }

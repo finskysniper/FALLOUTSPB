@@ -1,28 +1,43 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public InputModeController inputMode;
-    public HexHover hexHover;
+    public HexGrid grid;
+    public float moveSpeed = 3f;
 
-    void Update()
+    Vector2Int currentHex;
+    Coroutine moveRoutine;
+
+    void Start()
     {
-        if (inputMode.currentMode != CursorMode.Move)
-            return;
+        currentHex = grid.WorldToHex(transform.position);
+    }
 
-        if (Input.GetMouseButtonDown(0)) // ЛКМ
+    public void MoveAlong(List<Vector2Int> path)
+    {
+        if (moveRoutine != null)
+            StopCoroutine(moveRoutine);
+
+        moveRoutine = StartCoroutine(Move(path));
+    }
+
+    IEnumerator Move(List<Vector2Int> path)
+    {
+        foreach (var hex in path)
         {
-            Vector2Int targetHex = hexHover.GetHoveredHex();
-            MoveToHex(targetHex);
+            Vector3 target = grid.HexToWorld(hex.x, hex.y);
+            while (Vector3.Distance(transform.position, target) > 0.01f)
+            {
+                transform.position =
+                    Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
+                yield return null;
+            }
+
+            currentHex = hex;
         }
     }
 
-    void MoveToHex(Vector2Int hex)
-    {
-        Debug.Log($"Идём в хекс: {hex}");
-        // тут дальше:
-        // 1. построение пути
-        // 2. проверка AP
-        // 3. пошаговое движение
-    }
+    public Vector2Int CurrentHex => currentHex;
 }

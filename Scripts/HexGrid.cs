@@ -7,59 +7,94 @@ public class HexGrid : MonoBehaviour
     public int height = 10;
     public float hexSize = 1f;
 
-    public GameObject hexPrefab; // <-- prefab Hexagon Flat Top
+    public GameObject hexPrefab; // Sprite → Hexagon Flat Top (дебаг)
 
-    private Dictionary<Vector2Int, HexCell> cells =
-        new Dictionary<Vector2Int, HexCell>();
+    private Dictionary<Vector2Int, HexCell> cells = new();
+
+    // ====== НАПРАВЛЕНИЯ СОСЕДЕЙ (FLAT-TOP AXIAL) ======
+    private static readonly Vector2Int[] directions = new Vector2Int[]
+    {
+        new Vector2Int( 1,  0),
+        new Vector2Int( 1, -1),
+        new Vector2Int( 0, -1),
+        new Vector2Int(-1,  0),
+        new Vector2Int(-1,  1),
+        new Vector2Int( 0,  1),
+    };
 
     void Start()
     {
-        GenerateGrid();
+        Generate();
     }
 
-    void GenerateGrid()
+    void Generate()
     {
         cells.Clear();
 
-        for (int q = 0; q < width; q++)
-        {
-            for (int r = 0; r < height; r++)
-            {
-                HexCell cell = new HexCell(q, r);
-                cells.Add(new Vector2Int(q, r), cell);
+        int qOffset = width / 2;
+        int rOffset = height / 2;
 
-                CreateVisual(cell);
+        for (int q = -qOffset; q < width - qOffset; q++)
+        {
+            for (int r = -rOffset; r < height - rOffset; r++)
+            {
+                var cell = new HexCell(q, r);
+                cells[new Vector2Int(q, r)] = cell;
+
+                if (hexPrefab != null)
+                {
+                    Instantiate(
+                        hexPrefab,
+                        HexToWorld(q, r),
+                        Quaternion.identity,
+                        transform
+                    );
+                }
             }
         }
     }
 
-    void CreateVisual(HexCell cell)
-    {
-        if (hexPrefab == null) return;
-
-        GameObject hex = Instantiate(
-            hexPrefab,
-            HexToWorld(cell.q, cell.r),
-            Quaternion.identity,
-            transform
-        );
-
-        hex.transform.localScale = Vector3.one * hexSize;
-    }
-
-    // ====== AXIAL → WORLD (FLAT TOP) ======
+    // ====== FLAT-TOP AXIAL → WORLD (2D XY) ======
     public Vector3 HexToWorld(int q, int r)
     {
-        float x = hexSize * (3f / 2f * q);
-        float z = hexSize * (Mathf.Sqrt(3f) * (r + q / 2f));
-        return new Vector3(x, 0f, z);
+        float x = hexSize * (1.5f * q);
+        float y = hexSize * (Mathf.Sqrt(3f) * (r + q * 0.5f));
+        return new Vector3(x, y, 0f);
     }
 
-    // ====== WORLD → AXIAL ======
-    public Vector2Int WorldToHex(Vector3 worldPos)
+    // ====== ПРОВЕРКИ И ДОСТУП ======
+    public bool HasCell(Vector2Int hex)
     {
-        float q = (2f / 3f * worldPos.x) / hexSize;
-        float r = (-1f / 3f * worldPos.x + Mathf.Sqrt(3f) / 3f * worldPos.z) / hexSize;
+        return cells.ContainsKey(hex);
+    }
+
+    public HexCell GetCell(Vector2Int hex)
+    {
+        cells.TryGetValue(hex, out var cell);
+        return cell;
+    }
+
+    // ====== СОСЕДИ ХЕКСА ======
+    public List<Vector2Int> GetNeighbors(Vector2Int hex)
+    {
+        List<Vector2Int> result = new();
+
+        foreach (var dir in directions)
+        {
+            Vector2Int neighbor = hex + dir;
+
+            if (cells.ContainsKey(neighbor))
+                result.Add(neighbor);
+        }
+
+        return result;
+    }
+
+    // ====== WORLD → AXIAL (2D XY, FLAT-TOP) ======
+    public Vector2Int WorldToHex(Vector3 world)
+    {
+        float q = (2f / 3f * world.x) / hexSize;
+        float r = (-1f / 3f * world.x + Mathf.Sqrt(3f) / 3f * world.y) / hexSize;
 
         return CubeRound(q, r);
     }
@@ -87,4 +122,5 @@ public class HexGrid : MonoBehaviour
 
         return new Vector2Int(rx, rz);
     }
+
 }

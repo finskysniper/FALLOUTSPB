@@ -1,41 +1,28 @@
 using UnityEngine;
 
-public class InputModeController : MonoBehaviour
+public class InputController : MonoBehaviour
 {
-    public CursorMode currentMode = CursorMode.Select;
-
-    public HexHover hexHover;
+    public HexGrid grid;
+    public HexHover hover;
+    public PlayerController player;
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(1)) // ПКМ
+        if (Input.GetMouseButtonDown(0))
         {
-            ToggleMode();
-        }
-    }
+            Vector2Int target = hover.CurrentHex();
 
-    void ToggleMode()
-    {
-        if (currentMode == CursorMode.Select)
-            SetMode(CursorMode.Move);
-        else
-            SetMode(CursorMode.Select);
-    }
+            if (!grid.HasCell(target))
+                return;
 
-    void SetMode(CursorMode mode)
-    {
-        currentMode = mode;
+            var path = HexPathfinder.FindPath(
+                grid,
+                player.CurrentHex,
+                target
+            );
 
-        if (mode == CursorMode.Move)
-        {
-            Cursor.visible = false;
-            hexHover.enabled = true;
-        }
-        else
-        {
-            Cursor.visible = true;
-            hexHover.enabled = false;
-            hexHover.HideHighlight();
+            if (path != null)
+                player.MoveAlong(path);
         }
     }
 }

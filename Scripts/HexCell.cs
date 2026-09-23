@@ -11,3 +11,5 @@ public class HexCell
         this.r = r;
     }
 }
+
+//адольф гитлер был прав, а не лев
